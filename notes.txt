@@ -1,0 +1,235 @@
+Nodes
+A node is the smallest unit of computing hardware in Kubernetes.
+It is a representation of a single machine in your cluster.
+we can instead simply view each machine as a set of CPU and RAM resources that can be utilized.
+In this way, any machine can substitute any other machine in a Kubernetes cluster.
+
+The Cluster
+In Kubernetes, nodes pool together their resources to form a more powerful machine.
+When you deploy programs onto the cluster, it intelligently handles distributing work to the individual nodes for you.
+If any nodes are added or removed, the cluster will shift around work as necessary. It shouldn’t matter to the program, or the programmer, which individual machines are actually running the code.
+
+Persistent Volumes
+To store data permanently, Kubernetes uses Persistent Volumes.
+While the CPU and RAM resources of all nodes are effectively pooled and managed by the cluster, persistent file storage is not.
+Instead, local or cloud drives can be attached to the cluster as a Persistent Volume. This can be thought of as plugging an external hard drive in to the cluster.
+Persistent Volumes provide a file system that can be mounted to the cluster, without being associated with any particular node.
+
+Containers
+Programs running on Kubernetes are packaged as Linux containers.
+Containerization allows you to create self-contained Linux execution environments.
+Any program and all its dependencies can be bundled up into a single file.
+Multiple programs can be added into a single container, but you should limit yourself to one process per container if at all possible.
+It’s better to have many small containers than one large one.
+If each container has a tight focus, updates are easier to deploy and issues are easier to diagnose.
+
+Pods
+Kubernetes doesn’t run containers directly; instead it wraps one or more containers into a higher-level structure called a pod.
+Any containers in the same pod will share the same resources and local network.
+Containers can easily communicate with other containers in the same pod as though they were on the same machine while maintaining a degree of isolation from others.
+Pods are used as the unit of replication in Kubernetes. 
+If your application becomes too popular and a single pod instance can’t carry the load, Kubernetes can be configured to deploy new replicas of your pod to the cluster as necessary. 
+Even when not under heavy load, it is standard to have multiple copies of a pod running at any time in a production system to allow load balancing and failure resistance.
+Pods can hold multiple containers, but you should limit yourself when possible. Because pods are scaled up and down as a unit, all containers in a pod must scale together, regardless of their individual needs. 
+This leads to wasted resources and an expensive bill. To resolve this, pods should remain as small as possible, typically holding only a main process and its tightly-coupled helper containers (these helper containers are typically referred to as “side-cars”). 
+
+Deployments
+Although pods are the basic unit of computation in Kubernetes, they are not typically directly launched on a cluster. Instead, pods are usually managed by one more layer of abstraction: the deployment.
+A deployment’s primary purpose is to declare how many replicas of a pod should be running at a time. When a deployment is added to the cluster, it will automatically spin up the requested number of pods, and then monitor them. If a pod dies, the deployment will automatically re-create it.
+Using a deployment, you don’t have to deal with pods manually. You can just declare the desired state of the system, and it will be managed for you automatically.
+
+Ingress
+you can create a cluster of nodes, and launch deployments of pods onto the cluster. There is one last problem to solve, however: allowing external traffic to your application.
+By default, Kubernetes provides isolation between pods and the outside world. If you want to communicate with a service running in a pod, you have to open up a channel for communication. This is referred to as ingress.
+There are multiple ways to add ingress to your cluster. The most common ways are by adding either an Ingress controller, or a LoadBalancer. The exact tradeoffs between these two options are out of scope for this post, but you must be aware that ingress is something you need to handle before you can experiment with Kubernetes.
+
+Setting Up a Cluster
+
+kubectl
+The tool you use when setting up a Kubernetes environment is the kubectl command. 
+This command allows you to interact with the Kubernetes API. 
+kubectl is used to manage the resources (create, update, and delete Kubernetes resources) like pods, deployments, and load balancers.
+kubectl can’t be used to directly provision the nodes or clusters your pods are run on. 
+This is because Kubernetes was designed to be platform agnostic. 
+Kubernetes doesn’t know or care where it is running, so there is no built in way for it to communicate with your chosen cloud provider to rent nodes on your behalf.
+
+
+#####################################################################################################
+
+Deploying An App
+
+YAML: Declarative Infrastructure
+There are two ways to add resources to Kubernetes: interactively through the command line using kubectl add,
+and declaratively, by defining resources in YAML files.
+YAML is the way to go when you want to build something maintainable. 
+By writing all of your Kubernetes resources into YAML files, you can record the entire state of your cluster in a set of easily maintainable files, which can be version-controlled and managed like any other part of your system. 
+In this way, all the instructions needed to host your service can be saved right alongside the code itself.
+
+
+Adding a Pod : 
+
+1 apiVersion: v1           // this resource is defined in v1 of the Kubernetes API  
+2 kind: Pod                // type of resource we are creating is a pod
+3 metadata:                /*   3-8 the properties of our pod. In this case, the pod is unoriginally named “gitea-pod”,
+                                and it contains a single container we’re calling “gitea-container”. */
+4    name: gitea-pod
+5 spec:
+6    containers:
+7      - name: gitea-container
+8        image: gitea/gitea:1.4      // container image we want to run
+
+
+ apply resource to our cluster
+ kubectl apply -f gitea.yaml
+
+ get all pods
+ kubectl get pods
+
+ to get more information about pod
+ kubectl logs -f gitea-pod
+
+ removes all resources defined in the YAML file from the cluster
+ kubectl delete -f gitea.yaml
+
+NOTE: there is now a server running inside the container on our cluster! Unfortunately,
+      we won’t be able to access it until we start opening up ingress channels 
+
+Deployment :
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gitea-deployment
+spec:
+  replicas: 1        // number of copies of the pods we want running
+  selector:
+    matchLabels:
+      app: gitea     // deployment can always keep track of which pods it manages by searching
+  template:
+    metadata:
+      labels:
+        app: gitea     //  all pods created by this deployment  if the deployment ever needs to retrieve the list of all pods that it created
+    spec:
+      containers:
+      - name: gitea-container
+        image: gitea/gitea:1.4
+
+we are really defining two different objects here:
+deployment itself (lines 1–9), and the template of the pod it is managing (lines 10–17).
+
+Labels
+Labels are simply user-defined key-value stores associated with Kubernetes resources.
+
+Selectors
+Selectors are used retrieve the resources that match a given label query.
+
+apply resource to our cluster
+kubectl apply -f gitea.yaml
+
+get information about the deployment 
+kubectl get deployments
+
+To test to make sure everything’s working, try deleting the pod with kubectl delete pod <pod_name>. 
+You should quickly see a new one pop back in it’s place. That’s the magic of deployments!
+
+#################################################################################################
+
+Networking Basics
+
+Opening Container Ports
+
+By default, pods are essentially isolated from the rest of the world. 
+In order to route traffic to our application, we need to open the set of ports we plan to use for the container.
+
+The software inside our Gitea container was designed to listen on port 3000 for HTTP requests, and 22 for SSH connections (to clone repositories). Let’s open up these ports in our container through the YAML file:
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gitea-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea-container
+        image: gitea/gitea:1.4
+        ports:                                      #+
+        - containerPort: 3000                       #+
+          name: http                                #+
+        - containerPort: 22                         #+
+          name: ssh     
+
+ updated file to the cluster:
+	kubectl apply -f gitea.yaml
+
+ run kubectl describe deployment to see our newly opened ports listed in the deployment summary
+  kubectl describe deployment | grep Ports
+
+
+################################################################################################
+
+Networking Basics
+
+Opening Container Ports
+By default, pods are essentially isolated from the rest of the world. 
+In order to route traffic to our application, we need to open the set of ports we plan to use for the container.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gitea-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea-container
+        image: gitea/gitea:1.4
+        ports:                                      #+
+        - containerPort: 3000                       #+
+          name: http                                #+
+        - containerPort: 22                         #+
+          name: ssh 
+
+Apply the updated file to the cluster:
+ kubectl apply -f gitea.yaml
+
+run kubectl describe deployment to see our newly opened ports listed in the deployment summary
+kubectl describe deployment | grep Ports
+
+Debugging with Port Forward
+The ports on our container should now be open, but we still need a way to communicate with the pod in the cluster. 
+For debugging purposes, we can attach to our pod using kubectl port-forward
+
+# grab the name of your active pod
+$ PODNAME=$(kubectl get pods --output=template \
+     --template="{{with index .items 0}}{{.metadata.name}}{{end}}")
+# open a port-forward session to the pod
+$ kubectl port-forward $PODNAME 3000:3000
+
+Now, kubectl will forward all connections on port 3000 on your local machine into the pod running in the cloud
+
+Creating an External LoadBalancer
+   
+
+
+
+
+
+
+
+
+
