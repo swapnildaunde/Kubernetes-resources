@@ -1,0 +1,140 @@
+k8s composed of master nodes and worker nodes.
+
+mster receives instructions from k8s client & issue those instructions to the node to perform specific task in the cluster.
+
+example : 
+  Deploy an app into k8s cluster with 4 replicas we issue that instruction to k8s master using k8s client.
+  master receives an istruction from client. it does scheduling (nothing but find outs nodes on which it has to create replicas)
+After finding out nodes it sends instruction to those nodes with details about the containers it has to create 
+& those 4 replicas are created on the cluster.
+
+In a cluster a specific node fails then what is happens to the container running on the node 
+ =>  It is automatiocally recover by k8s. If there is any node failure master detects that and it will have info about what container is running on that node. It tries to re schedule this  and find out node and create replica on those specific node.
+
+Pode :
+     Automic unit of replication.In k8s if you wanna deploy application we minimum ned a pod.
+On k8s node we generally deploy pods. pod contains its own ip address.pod can have one or more containers.   
+Ip address allocated to the pod reachable within thecluster from any node.
+
+    In the cluster pod running on one node can talk to the pod running on another node with ip address.
+
+  containers within one pod can communicate with each other by using localhost.
+In order to deploy a pod we need to describe details in a yaml file.
+Instead of yaml file we can directly create pods with kubectl cmds.
+
+In k8s we have different objects(resources) such as pods,deploymy default pods are not exposec outside the clusterent,services, replicasets etc
+
+cmd to get details of pods
+kubectl get pods
+
+create a pod using yaml file
+kubectl create -f pods.yml
+
+kubectl is a cmd line tool to interact with k8s cluster.
+kubectl connects to minikube cluster and submit the details in pods.yml
+
+In order to get access application deployment in the pods on k8s cluster we need services.
+
+By default pods are not exposed outside the cluster. We can not access pods directly from putside thec cluster.
+
+In order to access pods from outside the cluster we needto take help of services.
+
+To get info about pod
+kubectl describe pod pod_name
+
+To get logs about pod
+kubectl logs pod_name 
+
+If pod contains multiple container and you wanna get log of particular container
+kubectl logs pod_name -c container_name
+
+
+To execute cmd on container
+kubectl exec pod_name -- ls
+
+specific container
+kubectl exec pod_name -c container_name -- ls
+
+To get into the container / pod
+kubectl exec -it pod_name -- bash
+
+To get into the particular container
+kubectl exec -it pod_name -c container_name -- bash
+
+
+Service :
+ If app client can talk to pods directly from outside the cluster their might be a case the pod crashes then
+k8s cluster create a new pod in such cases app client need to get dynamically generated pod ip 
+in order to interact new pod created by cluster.
+Its difficult to keep track of ips to app client. the solution for this is service.
+
+Service objects are static once created they stict to the cluster.
+services never dies that way app client do not have to keep track of dynamically changing pod ips.
+
+In production we need same type of pods(multiple replicas) in such cass services will act like load balancer.
+If any pod crashes the cluster will take care of creating a new pod which comes with newip. 
+New pod created automacally joins to the service.
+
+labels play a key role to tying up pods with service.
+service object will have a selector. It selects all pods matching specific label.
+
+kubectl create -f selectors.yml
+kubectl get services
+
+To access service from outside of cluster need node ip
+ use cmd => minicube ip
+
+curl http://minicube_ip:port
+
+port : used by client within th cluster to access the service
+
+target port : when request comes to service it hits the porton target port of pod.
+
+get into cluster using minicube ssh
+minicube ssh
+curl http://service_ip:port
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+   
+ 
