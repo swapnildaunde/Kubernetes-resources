@@ -1,0 +1,92 @@
+// Setup Kubernetes (K8s) Cluster on AWS
+
+1. Create Ubuntu EC2 instance(18.04)  // port 80.8080.22.443
+2. login as root sudo su -
+3. install AWSCLI
+
+ curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o awscli-bundle.zip
+ apt install unzip python
+ unzip awscli-bundle.zip
+ #sudo apt-get install unzip - if you dont have unzip in your system
+ ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+
+4. Install kubectl on ubuntu instance
+
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+ chmod +x ./kubectl
+ sudo mv ./kubectl /usr/local/bin/kubectl
+
+5. Create an IAM user/role with Route53, EC2, IAM and S3 full access
+
+6. Attach IAM role to ubuntu instance
+  => goto instances => select k8 => actions =>instant settings => add/replace role => select k8s-role =>apply 
+
+7. 
+# Note: If you create IAM user with programmatic access then provide Access keys. Otherwise region information is enough
+	aws configure
+   => AWS Access Key ID [None]: 
+      AWS Secret Access Key [None]: 
+      Default region name [None]: us-east-1a
+      Default output format [None]:
+
+8. Install kops on ubuntu instance
+
+ curl -LO https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
+ chmod +x kops-linux-amd64
+ sudo mv kops-linux-amd64 /usr/local/bin/kops
+
+9. Create a Route53 private hosted zone (you can create Public hosted zone if you have a domain)
+
+	Routeh53 --> hosted zones --> created hosted zone  
+	Domain Name: valaxy.net
+	Type: Private hosted zone for Amzon VPC i.e
+    	(=>dns mgmt => create hosted zone 
+                  => domain name swaps.in => type private => select vpc virginia =>create)
+
+10. create an S3 bucket
+	aws s3 mb s3://dev.k8s.swaos.in
+     => it will show an error
+            => make_bucket failed: Could not connect to the endpoint URL: 
+     =>To resolve  vi ~/.aws/config  change region=us-east-1a to region=us-east-1 => save
+      => aws s3 mb s3://dev.k8s.swaos.in
+
+11. Expose environment variable:
+    
+	export KOPS_STATE_STORE=s3://dev.k8s.swaos.in   
+
+12. Create sshkeys before creating cluster
+
+    ssh-keygen
+
+13. Create kubernetes cluster definitions on S3 bucket
+  
+    kops create cluster --cloud=aws --zones=us-east-1a --name=dev.k8s.swaos.in --dns-zone=swaos.in --dns private 
+
+14. To know cluster name
+      kops get cluster	
+
+15. Create kubernetes cluser
+
+     kops update cluster dev.k8s.swaos.in --yes
+     => it will create 3 ec2 instances 1 master 2 node
+
+16. Validate your cluster
+
+ kops validate cluster
+
+17. To list nodes
+
+kubectl get nodes
+
+18.  To delete cluster
+
+ kops delete cluster demo.k8s.valaxy.net --yes
+
+
+
+
+
+ 
+
+
+

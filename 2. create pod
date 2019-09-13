@@ -1,0 +1,15 @@
+1. login as root cd ~/.ssh
+2. ssh -i id_rsa admin@public_ip_master
+3. kubectl get nodes
+4. kubectl get pods
+5. To create a pod  
+   => kubectl run sample-nginx --image=nginx --replicas=2 --port=80 
+   =>             (pod name )    (docker image) (no of replicas) (export port)
+
+6. kubectl get deployments
+7. kubectl get services //
+8.  To create a service to access created container 
+     => kubectl expose deployment sample-nginx --port=80 --type=LoadBalancer
+9. kubectl get services
+10 kubectl get pods
+11. kubectl describe pod pod_id      
