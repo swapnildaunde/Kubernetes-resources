@@ -3,3 +3,4 @@ https://www.freecodecamp.org/news/learn-kubernetes-in-under-3-hours-a-detailed-g
 https://www.freecodecamp.org/news/search/?query=Kubernetes
 https://techbeacon.com/enterprise-it/47-advanced-tutorials-mastering-kubernetes
 https://jvns.ca
+https://medium.com/@jandavid.staerk/why-kubernetes-is-awesome-9f7ff0186996
