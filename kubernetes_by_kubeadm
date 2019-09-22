@@ -23,9 +23,6 @@ Master
 20. kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
 21. kubectl get nodes
 
-
-// kubeadm join 172.31.92.13:6443 --token rnh02z.0bnwrrnkat4ys39b --discovery-token-ca-cert-hash sha256:0c71e0e742cea195bf5e8934aaf16db24468f14c068f39bd8ca778c67838b53e    
-
 Worker Node
 ===========
 1. sudo apt-get update -y
