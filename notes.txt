@@ -258,6 +258,23 @@ Service can be single point of contact like loadbalancer for set of pods.
 By default Pod is not expose to the internet or outside of the cluster, by using service Pod is exposed to internet.
 Any Pod create in future is added to service dynamicaly if pod label is matching with Service lable selector.
 
+service.yml
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: nodeapp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: NodePort
+  
+kubectl create -f service.yml
+  
+  
 
 
 
