@@ -274,9 +274,24 @@ spec:
   
 kubectl create -f service.yml
   
-  
-
-
+POD VOLUMES :  
+pod-volumes.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+spec:
+  containers:
+  - name: redis
+    image: redis
+    volumeMounts:
+    - name: redis-storage
+      mountPath: /data/redis
+  volumes:
+  - name: redis-storage
+    emptyDir: {}
+    
+kubectl create -f pod-volumes.yml    
 
 
 
