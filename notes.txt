@@ -132,47 +132,6 @@ kubectl get deployments
 To test to make sure everything’s working, try deleting the pod with kubectl delete pod <pod_name>. 
 You should quickly see a new one pop back in it’s place. That’s the magic of deployments!
 
-#################################################################################################
-
-Networking Basics
-
-Opening Container Ports
-
-By default, pods are essentially isolated from the rest of the world. 
-In order to route traffic to our application, we need to open the set of ports we plan to use for the container.
-
-The software inside our Gitea container was designed to listen on port 3000 for HTTP requests, and 22 for SSH connections (to clone repositories). Let’s open up these ports in our container through the YAML file:
-
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: gitea-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: gitea
-  template:
-    metadata:
-      labels:
-        app: gitea
-    spec:
-      containers:
-      - name: gitea-container
-        image: gitea/gitea:1.4
-        ports:                                      #+
-        - containerPort: 3000                       #+
-          name: http                                #+
-        - containerPort: 22                         #+
-          name: ssh     
-
- updated file to the cluster:
-	kubectl apply -f gitea.yaml
-
- run kubectl describe deployment to see our newly opened ports listed in the deployment summary
-  kubectl describe deployment | grep Ports
-
-
 ################################################################################################
 
 Networking Basics
