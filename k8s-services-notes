@@ -1,0 +1,61 @@
+Kubernetes pod is the basic primitive unit in the cluster. Each Pod in the cluster has a unique IP address. 
+However, this IP address is not static for a pod. If a pod gets rescheduled due to some reason, 
+it will catch another available IP address in the cluster. This is a problem if there are pods which depend on others. 
+For an example, let’s say a pod containing a web application rely on a pod running MySQL. 
+Here, if MySQL pod IP is not stable over the time, the application may break.
+
+What is a Kubernetes Service?
+Kubenetes Service is an abstraction of a logical set of pods. 
+Simply service acts as an intermediate which allows pods to talk to each other. 
+Kubernetes service also supports TCP and UDP protocols. 
+You can point the set of pods need to expose from the Service you write.
+
+Types of Kubernetes services
+1. ClusterIP
+2. NodePort
+3. LoadBalancer
+
+ClusterIP: This is the default service type available in Kubernetes. 
+The service is reachable or visible only inside the cluster. 
+If you do not want to expose your pod to the outside world, this is the correct service type. 
+For an example, you don’t want to expose your database to the internet. You can only expose to the cluster pods using ClusterIP.
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 9095
+
+
+NodePort: When you want to expose your application to the internet, you can use this service type. 
+Kubernetes master will provide a random port within the range 30000–32767 or you can provide a range using --service-node-port-range flag. Every kubernetes node will expose this port.
+
+Now you may get a question.
+Question: What If we have four nodes exposing a port for the service, 
+but the actual pod is in only one node. So how Kubernetes identify which node should receive traffic?
+Answer: Kubeproxy which is placed on Kubernetes node handles it via IP tables.
+
+LoadBalancer: you can use this service type to provision a load balancer for your service. 
+Some cloud providers allow the loadBalancerIP to be specified in the service yaml file. 
+In those cases, the load-balancer will be created with the user-specified loadBalancerIP otherwise, 
+an ephemeral IP will be assigned to the loadBalancer.
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 9095
+  type: LoadBalancer
+
