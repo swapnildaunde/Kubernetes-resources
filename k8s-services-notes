@@ -20,19 +20,6 @@ The service is reachable or visible only inside the cluster.
 If you do not want to expose your pod to the outside world, this is the correct service type. 
 For an example, you don’t want to expose your database to the internet. You can only expose to the cluster pods using ClusterIP.
 
-kind: Service
-apiVersion: v1
-metadata:
-  name: my-service
-spec:
-  selector:
-    app: myapp
-  ports:
-  - protocol: TCP
-    port: 443
-    targetPort: 9095
-
-
 NodePort: When you want to expose your application to the internet, you can use this service type. 
 Kubernetes master will provide a random port within the range 30000–32767 or you can provide a range using --service-node-port-range flag. 
 Every kubernetes node will expose this port.
@@ -58,5 +45,5 @@ spec:
   - protocol: TCP
     port: 443
     targetPort: 9095
-  type: LoadBalancer
+  type: LoadBalancer  // applicable values are ClusterIp(default), NodePort and LoadBalancer etc 
 
