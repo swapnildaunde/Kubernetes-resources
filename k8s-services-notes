@@ -34,7 +34,8 @@ spec:
 
 
 NodePort: When you want to expose your application to the internet, you can use this service type. 
-Kubernetes master will provide a random port within the range 30000–32767 or you can provide a range using --service-node-port-range flag. Every kubernetes node will expose this port.
+Kubernetes master will provide a random port within the range 30000–32767 or you can provide a range using --service-node-port-range flag. 
+Every kubernetes node will expose this port.
 
 Now you may get a question.
 Question: What If we have four nodes exposing a port for the service, 
