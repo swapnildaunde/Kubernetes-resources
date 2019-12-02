@@ -1,4 +1,5 @@
-Architecture
+Introduction
+Kubernetes (K8s) is an open-source container orchestration system for automating deployment, scaling, and management of containerized applications.
 On very high level Kubernetes provides a set of dynamically scalable hosts for running workloads using containers and uses a set of management hosts called masters for providing an API for managing the entire container infrastructure. 
 The workloads could include long-running services, batch jobs and container host specific daemons.
 
