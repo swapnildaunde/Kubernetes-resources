@@ -79,6 +79,32 @@ kubectl run <application-name> --image=<container-image> --port=<port-no>
 Once the above CLI command is executed, it will create a deployment definition, a replica set and a pod using the given container image add a selector label using the application name.
 
 
+DaemonSets
+Kubernetes provides a resource called "DaemonSets" for running a copy of a pod in each Kubernetes node as a daemon. 
+
+Some of the use cases of DaemonSets are as follows:
+1. A cluster storage daemon such as glusterd , ceph to be deployed on each node for providing persistence storage.
+2. A node monitoring daemon such as Prometheus Node Exporter to be run on every node for monitoring the container hosts.
+3. A log collection daemon such as fluentd or logstash to be run on every node for collecting container and Kubernetes component logs.
+4. An ingress controller pod to be run on a collection of nodes for providing external routing.
+
+
+StatefulSets
+StatefulSets are similar to ReplicaSets except that it provides the ability to handle the startup sequence of pods, uniquely identify each pod for preserving its state while providing following characteristics:
+Stable, unique network identifiers.
+Stable, persistent storage.
+Ordered, graceful deployment and scaling.
+Ordered, graceful deletion and termination.
+Ordered, automated rolling updates
+
+Deploying databases on container platforms for production usage would be a slightly difficult task than deploying applications due to their requirements for clustering, point to point connections, replication, shading, managing backups, etc. As mentioned previously StatefulSets have been designed specifically for supporting such complex requirements and there are a couple of options for running PostgreSQL, and MongoDB clusters on Kubernetes.
+
+
+Running Background Jobs
+In addition to ReplicaSets and StatefulSets Kubernetes provides two additional controllers for running workloads in the background called Jobs and CronJobs. 
+The difference between Jobs and CronJobs is that "Jobs execute once and terminates" whereas "CronJobs get executed periodically by a given time interval" similar to standard Linux cron jobs.
+
+
 Service
 One of the key features of Kubernetes is its "service discovery and internal routing model" provided using "SkyDNS and layer 4 virtual IP" based routing system. These features provide internal routing for application requests using services. 
 A set of pods created via a replica set can be load balanced using a service within the cluster network. The services get connected to pods using selector labels. Each service will get assigned a unique IP address, a hostname derived from its name and route requests among the pods in round robin manner.
@@ -115,6 +141,59 @@ Ingress
 you can create a cluster of nodes, and launch deployments of pods onto the cluster. There is one last problem to solve, however: allowing external traffic to your application.
 By default, Kubernetes provides isolation between pods and the outside world. If you want to communicate with a service running in a pod, you have to open up a channel for communication. This is referred to as ingress.
 There are multiple ways to add ingress to your cluster. The most common ways are by adding either an Ingress controller, or a LoadBalancer. The exact tradeoffs between these two options are out of scope for this post, but you must be aware that ingress is something you need to handle before you can experiment with Kubernetes.
+
+
+ConfigMaps (Configurations Management)
+Containers generally use environment variables for parameterizing their runtime configurations. However, typical enterprise applications use a considerable amount of configuration files for providing static configurations required for a given deployment. 
+Kubernetes provides a fabulous way of managing such configuration files using a simple resource called "ConfigMaps" without bundling them into the container images.
+
+ConfigMaps can be created using directories, files or literal values using following CLI command:
+kubectl create configmap <map-name> <data-source>
+
+Once a ConfigMap is created, it can be mounted to a pod using a volume mount. With this loosely coupled architecture, configurations of an already running system can be updated seamlessly just by updating the relevant ConfigMap and executing a rolling update process.
+Currently ConfigMaps do not support "nested folders", therefore if there are configuration files available in a nested directory structure of the application, a ConfigMap would need to be created for each directory level.
+
+
+Secrets (Credentials Management)
+K8s use Secrets for managing sensitive information such as passwords, OAuth tokens, and ssh keys. Otherwise updating that information on an already running system might require rebuilding the container images.
+A secret can be created for managing basic auth credentials using the following way:
+# write credentials to two files
+$ echo -n 'admin' > ./username.txt
+$ echo -n '1f2d1e2e67df' > ./password.txt
+# create a secret
+$ kubectl create secret generic app-credentials --from-file=./username.txt --from-file=./password.txt
+
+Once a secret is created, it can be read by a pod either using environment variables or volume mounts.
+
+
+blue/green deployment
+This is another invaluable feature of Kubernetes which allows applications to "seamlessly roll out security updates and backward compatible" changes without much effort. 
+If the changes are not backward compatible, a manual blue/green deployment might need to be executed using a separate deployment definition.
+This approach allows a rollout to be executed for updating a container image using a simple CLI command:
+$ kubectl set image deployment/<application-name> <container-name>=<container-image-name>:<new-version>
+
+Once a rollout is executed, the status of the rollout process can be checked as follows:
+$ kubectl rollout status deployment/<application-name>
+Waiting for rollout to finish: 2 out of 3 new replicas have been updated...
+deployment "<application-name>" successfully rolled out
+
+Using the same CLI command kubectl set image deployment an update can be rolled back to a previous state.
+
+
+Autoscaling
+Kubernetes allows pods to be manually scaled either using ReplicaSets or Deployments. 
+The following CLI command can be used for this purpose:
+kubectl scale --replicas=<desired-instance-count> deployment/<application-name>
+
+functionality can be extended by adding another resource called Horizontal Pod Autoscaler (HPA) against a deployment for dynamically scaling the pods based on their actual resource usage. 
+The HPA will monitor the resource usage of each pod via the "resource metrics API" and inform the deployment to change the replica count of the ReplicaSet accordingly. 
+Kubernetes uses an "upscale delay and a downscale delay" for avoiding thrashing which could occur due to frequent resource usage fluctuations in some situations. Currently, HPA only provides support for scaling based on CPU usage. If needed custom metrics can also be plugged in via the "Custom Metrics API" depending on the nature of the application.
+
+Helm (Package Management)
+This allows Kubernetes resources such as deployments, services, configmaps, ingresses, etc to be templated and packaged using a resource called chart and allow them to be configured at the installation time using input parameters.
+More importantly, it allows existing charts to be reused when implementing installation packages using dependencies. 
+Helm repositories can be hosted in public and private cloud environments for managing application charts. 
+Helm provides a CLI for installing applications from a given Helm repository into a selected Kubernetes environment.
 
 
 Setting Up a Cluster
