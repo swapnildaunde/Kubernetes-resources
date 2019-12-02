@@ -46,6 +46,10 @@ Even when not under heavy load, it is standard to have multiple copies of a pod 
 Pods can hold multiple containers, but you should limit yourself when possible. Because pods are scaled up and down as a unit, all containers in a pod must scale together, regardless of their individual needs. 
 This leads to wasted resources and an expensive bill. To resolve this, pods should remain as small as possible, typically holding only a main process and its tightly-coupled helper containers (these helper containers are typically referred to as “side-cars”). 
 
+ReplicaSet 
+A ReplicaSet can be considered as a YAML or a JSON based metadata file which defines the container images, ports, the number of replicas, activation health checks, liveness health checks, environment variables, volume mounts, security rules, etc required for creating and managing the containers.
+The ReplicaSets can be managed by another high level resource called Deployments
+
 Deployments
 Although pods are the basic unit of computation in Kubernetes, they are not typically directly launched on a cluster. Instead, pods are usually managed by one more layer of abstraction: the deployment.
 A deployment’s primary purpose is to declare how many replicas of a pod should be running at a time. 
