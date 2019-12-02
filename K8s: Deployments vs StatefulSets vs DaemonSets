@@ -1,0 +1,22 @@
+Three different ways to deploy your application(pods) on Kubernetes using different Kubernetes resources. 
+Below are 3 different resources that Kubernetes provides for deploying pods.
+1. Deployments
+2. StatefulSets
+3. DaemonSets
+
+Deployments
+Deployment is the easiest and most used resource for deploying your application. 
+It is a Kubernetes controller that matches the current state of your cluster to the desired state mentioned in the Deployment manifest. 
+
+e.g. If you create a deployment with 1 replica, it will check that the desired state of ReplicaSet is 1 and current state is 0, so it will create a ReplicaSet, which will further create the pod.
+If you create a deployment with name counter, it will create a ReplicaSet with name counter-<replica-set-id>, which will further create a Pod with name counter-<replica-set->-<pod-id>.
+
+Deployments are usually used for "stateless applications". However, you can save the state of deployment by attaching a "Persistent Volume" to it and make it stateful, but all the pods of a deployment will be sharing the same Volume and data across all of them will be same.
+
+If you deploy the deployment, and see the logs of the pod, you will be able to see the log in order like 1,2,3,…
+Now if you scale the deployment to 2 by running,
+kubectl scale deployment counter --replicas=2
+you can see a new pod created, if you check the logs of the new pod, its logs will not start from 1 rather it will start from the last number of the 1st pod.
+If you see the logs, they are starting from 73, meaning that the previous pod had written till 72 in the file and they both are sharing the same file and volume and data is consistent across all pods of a Deployment. Also if you check the Persistent Volume Claims(PVCs), only one PVC will be created that both the pods will be sharing.
+
+Deployments, as discussed, creates a ReplicaSet which then creates a Pod so whenever you update the deployment using RollingUpdate(default) strategy, a new ReplicaSet is created and the Deployment moves the Pods from the old ReplicaSet to the new one at a controlled rate. Rolling Update means that the previous ReplicaSet doesn’t scale to 0 unless the new ReplicaSet is up & running ensuring 100% uptime. If an error occurs while updating, the new ReplicaSet will never be in Ready state, so old ReplicaSet will not terminate again ensuring 100% uptime in case of a failed update. In Deployments, you can also manually roll back to a previous ReplicaSet, if needed in case if your new feature is not working as expected.
