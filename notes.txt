@@ -1,3 +1,16 @@
+Architecture
+On very high level Kubernetes provides a set of dynamically scalable hosts for running workloads using containers and uses a set of management hosts called masters for providing an API for managing the entire container infrastructure. 
+The workloads could include long-running services, batch jobs and container host specific daemons.
+
+All the container hosts are connected together using an "overlay network" for providing container-to-container routing. Applications deployed on Kubernetes are dynamically discoverable within the cluster network and can be exposed to the external networks using traditional "load balancers". 
+The state of the cluster manager is stored on a "highly distributed key/value store etcd" which runs within the master instances.
+
+Kubernetes scheduler will always make sure that each application component is health checked, provided high availability, when the number of replicas is set to more than one each instance is scheduled in multiple hosts, and if one of those hosts becomes unavailable all the containers which were running in that host are scheduled in any of the remaining hosts. 
+
+One of the fascinating capabilities Kubernetes offers is two level autoscaling.
+1. It provides the ability to autoscale containers using a resource called "Horizontal Pod Autoscaler" which watches the resource consumption and scale the number of containers needed accordingly. 
+2. It can scale the container cluster itself by "adding and removing hosts" depending on the resource requirements.
+
 Nodes
 A node is the smallest unit of computing hardware in Kubernetes.
 It is a representation of a single machine in your cluster.
@@ -25,7 +38,7 @@ If each container has a tight focus, updates are easier to deploy and issues are
 
 Pods
 Kubernetes doesn’t run containers directly; instead it wraps one or more containers into a higher-level structure called a pod.
-Any containers in the same pod will share the same resources and local network.
+Each pod allows sharing the file system, network interfaces, operating system users, etc among the containers using Linux namespaces, cgroups, and other kernel features.
 Containers can easily communicate with other containers in the same pod as though they were on the same machine while maintaining a degree of isolation from others.
 Pods are used as the unit of replication in Kubernetes. 
 If your application becomes too popular and a single pod instance can’t carry the load, Kubernetes can be configured to deploy new replicas of your pod to the cluster as necessary. 
@@ -35,8 +48,43 @@ This leads to wasted resources and an expensive bill. To resolve this, pods shou
 
 Deployments
 Although pods are the basic unit of computation in Kubernetes, they are not typically directly launched on a cluster. Instead, pods are usually managed by one more layer of abstraction: the deployment.
-A deployment’s primary purpose is to declare how many replicas of a pod should be running at a time. When a deployment is added to the cluster, it will automatically spin up the requested number of pods, and then monitor them. If a pod dies, the deployment will automatically re-create it.
+A deployment’s primary purpose is to declare how many replicas of a pod should be running at a time. 
+When a deployment is added to the cluster, it will automatically spin up the requested number of pods, and then monitor them. If a pod dies, the deployment will automatically re-create it.
 Using a deployment, you don’t have to deal with pods manually. You can just declare the desired state of the system, and it will be managed for you automatically.
+Deployments for providing features for rolling out updates and handling their rollbacks.
+
+A containerized application can be deployed on Kubernetes using a deployment definition by executing a simple CLI command as follows:
+kubectl run <application-name> --image=<container-image> --port=<port-no>
+Once the above CLI command is executed, it will create a deployment definition, a replica set and a pod using the given container image add a selector label using the application name.
+
+Service
+One of the key features of Kubernetes is its "service discovery and internal routing model" provided using "SkyDNS and layer 4 virtual IP" based routing system. These features provide internal routing for application requests using services. 
+A set of pods created via a replica set can be load balanced using a service within the cluster network. The services get connected to pods using selector labels. Each service will get assigned a unique IP address, a hostname derived from its name and route requests among the pods in round robin manner.
+
+The services will even provide IP-hash based routing mechanism for applications which may require session affinity. 
+A service can define a collection of ports and the properties defined for the given service will apply to all the ports in the same way. Therefore, in a scenario where session affinity is only needed for a given port where all the other ports required to use round robin based routing, multiple services may need to be used.
+
+kube-proxy
+Kubernetes services have been implemented using a component called kube-proxy. A kube-proxy instance runs in each node and provides three proxy modes: Userspace, iptables and IPVS. The current default is iptables.
+
+In the first proxy mode: userspace, kube-proxy itself will act as a proxy server and delegate requests accepted by an iptable rule to the backend pods. In this mode kube-proxy will operate in the userspace and will add an additional hop to the message flow. 
+
+In the second proxy mode: iptables, the kube-proxy will create a collection of iptable rules for forwarding incoming requests from the clients directly to the ports of backend pods on the network layer without adding an additional hop in the middle. This proxy mode is much faster than the first mode because of operating in the kernel space and not adding an additional proxy server in the middle.
+
+The third proxy mode was added in Kubernetes v1.8 which is much similar to the second proxy mode and it makes use of an IPVS based virtual server for routing requests without using iptable rules. 
+IPVS is a transport layer load balancing feature which is available in the Linux kernel based on Netfilter and provides a collection of load balancing algorithms. 
+The main reason for using IPVS over iptables is the performance overhead of syncing proxy rules when using iptables. 
+When thousands of services are created, updating iptable rules takes a considerable amount of time compared to few milliseconds with IPVS. Moreover, IPVS uses a hash table for looking up the proxy rules over sequential scans with iptables.
+
+Kubernetes "services" can be "exposed" to the external networks in two main ways. 
+1.By using node ports by "exposing dynamic ports" on the nodes that forward traffic to the service ports. 
+2. By using a load balancer configured via an ingress controller which can delegate requests to the services by connecting to the same overlay network.
+
+ Ingress controller
+ An ingress controller is a background process which may run in a container which listens to the Kubernetes API, dynamically configure and reloads a given load balancer according to a given set of ingresses. An ingress defines the routing rules based on hostnames and context paths using services.
+ 
+ kubectl expose deployment <application-name> --type=LoadBalancer --name=<service-name>
+The above command will create a service of load balancer type and map it to the pods using the same selector label created when the pods were created.
 
 Ingress
 you can create a cluster of nodes, and launch deployments of pods onto the cluster. There is one last problem to solve, however: allowing external traffic to your application.
