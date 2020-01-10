@@ -1,1 +1,32 @@
 
+kubelet
+A kubelet is an agent that runs on each node in the cluster. It makes sure containers are running in a pod but it doesn’t manage containers which were not created by Kubernetes.
+It takes a set of PodSpecs (as e.g. YAML files) and ensures that the containers described there are running and healthy. 
+kubelet has basically one job: given a set of containers to run, make sure they are all running.
+liveness
+The kubelet uses liveness probes to know "when to restart a Container". For example, liveness probes could catch a deadlock, where an application is running, but unable to make progress. Restarting a Container in such a state can help to make the application more available despite bugs.
+Readiness
+The kubelet uses readiness probes to know when a Container is ready to start accepting traffic. A Pod is considered ready when all of its Containers are ready. One use of this signal is to control which Pods are used as backends for Services. When a Pod is not ready, it is removed from Service load balancers.
+A side note: both of these healthchecks can define initialDelaySeconds. If this is undefined, they will start counting at the same time, as soon as a pod is scheduled and created. If you want livenessProbe to start after the readinessProbe (i.e. wait enough time for readiness to be likely verified first), you will need to adjust their initialDelaySeconds.
+
+The basic YAML template for these probes is really very simple:
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 3000
+livenessProbe:
+  httpGet:
+    path: /health/alive
+    port: 3000
+You just define path and port for HTTP healthchecks. As I said previously, you can also provide configuration for them like:
+initialDelaySeconds: Number of seconds after the container has started before liveness or readiness probes are initiated.
+periodSeconds: How often (in seconds) to perform the probe. Default to 10 seconds. The minimum value is 1.
+timeoutSeconds: Number of seconds after which the probe times out. Defaults to 1 second. The minimum value is 1.
+successThreshold: Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness. The minimum value is 1.
+failureThreshold: When a Pod starts and the probe fails, Kubernetes will try failureThreshold times before giving up. Giving up in case of liveness probe means restarting the Pod. In case of readiness probe, the Pod will be marked Unready. Defaults to 3. The minimum value is 1.
+What is more, httpGet probes have additional fields:
+host: Hostname to connect to, defaults to the pod IP.
+scheme: Scheme to use for connecting to the host (HTTP or HTTPS). Defaults to HTTP.
+path: Path to access on the HTTP server.
+httpHeaders: Custom headers to set in the request.
+port: Name or number of the port to access on the container. The number must be in the range of 1 to 65535.
