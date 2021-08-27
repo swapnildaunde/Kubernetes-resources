@@ -7,3 +7,5 @@ https://medium.com/@jandavid.staerk/why-kubernetes-is-awesome-9f7ff0186996
 https://medium.com/containermind/
 https://blog.francium.tech/lifecycle-of-a-kubernetes-pod-1214199ddd2c
 https://medium.com/containerum/
+https://revolgy.com/blog/kubernetes-in-production-poddisruptionbudget/
+https://dwdraju.medium.com/poddisruptionbudget-a-key-for-zero-downtime-c478d056e373
